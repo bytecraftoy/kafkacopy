@@ -1,0 +1,3 @@
+{"topic":"a","partition":3,"offset":1,"headers":[{"key":"b","value":"h"}],"key":"k","value":"v","timestamp": 5}
+{"topic":"a","headers":[{"key":"b","value":null}],"key":"i","value":"j","timestamp": 7}
+{"topic":"b","key":null,"value":"x"}
