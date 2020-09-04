@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package kafkacopy
+package kafka
 
 object LocalKafka {
   def main(args: Array[String]): Unit = {
     EmbeddedKafka.withEmbeddedKafka(1, false, 1) { brokers =>
       println()
       import scala.io.StdIn.readLine
-      readLine(s"""Local kafka running at: ${brokers.bootstrapServers}
+      readLine(s"""Local kafka running at: ${brokers}
            |ctrl-c to terminate""".stripMargin)
       println()
       println("Terminating...")

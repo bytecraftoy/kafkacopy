@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator, JsonParser}
 import com.fasterxml.jackson.databind.node.{ArrayNode, JsonNodeFactory, ObjectNode, TextNode}
 import com.fasterxml.jackson.databind.{DeserializationFeature, JsonNode, ObjectMapper, SerializationFeature}
-import kafkacopy.BinaryFormat.BinaryFormat
+import kafkacopy.BinaryEncoding.BinaryEncoding
 
 class RecordJsonMapper(private val mapper: ObjectMapper) {
   def this() = {
@@ -39,10 +39,9 @@ class RecordJsonMapper(private val mapper: ObjectMapper) {
 
   def to(f: JsonNode => Array[Byte], o: ObjectNode): RecordDto = {
     def nodeOpt(node: JsonNode): Option[JsonNode] =
-      Option(node).flatMap(
-        x =>
-          if (x.isNull) None
-          else Option(x)
+      Option(node).flatMap(x =>
+        if (x.isNull) None
+        else Option(x)
       )
 
     RecordDto(
@@ -98,11 +97,11 @@ class RecordJsonMapper(private val mapper: ObjectMapper) {
   private val fromJson: JsonNode => Array[Byte] = mapper.writeValueAsBytes(_)
   private val fromBase64: JsonNode => Array[Byte] = node => java.util.Base64.getDecoder.decode(node.textValue())
 
-  def readerFor(format: BinaryFormat, batchSize: Int, in: InputStream): (Vector[RecordDto] => Unit) => Unit = {
-    val fmt = format match {
-      case BinaryFormat.Text   => fromText
-      case BinaryFormat.Json   => fromJson
-      case BinaryFormat.Base64 => fromBase64
+  def readerFor(encoding: BinaryEncoding, batchSize: Int, in: InputStream): (Vector[RecordDto] => Unit) => Unit = {
+    val fmt = encoding match {
+      case BinaryEncoding.Text   => fromText
+      case BinaryEncoding.Json   => fromJson
+      case BinaryEncoding.Base64 => fromBase64
     }
     reader(in)
       .map(to(fmt, _))
@@ -111,11 +110,11 @@ class RecordJsonMapper(private val mapper: ObjectMapper) {
       .foreach(_)
 
   }
-  def writerFor(format: BinaryFormat, out: OutputStream): Vector[RecordDto] => Unit = {
+  def writerFor(format: BinaryEncoding, out: OutputStream): Vector[RecordDto] => Unit = {
     val fmt = format match {
-      case BinaryFormat.Text   => toText
-      case BinaryFormat.Json   => toJson
-      case BinaryFormat.Base64 => toBase64
+      case BinaryEncoding.Text   => toText
+      case BinaryEncoding.Json   => toJson
+      case BinaryEncoding.Base64 => toBase64
     }
     val write: RecordDto => Unit = writer(out).compose(from(fmt, _))
     xs =>
@@ -123,8 +122,4 @@ class RecordJsonMapper(private val mapper: ObjectMapper) {
       else xs.foreach(write)
   }
 
-}
-object BinaryFormat extends Enumeration {
-  type BinaryFormat = Value
-  val Text, Json, Base64 = Value
 }

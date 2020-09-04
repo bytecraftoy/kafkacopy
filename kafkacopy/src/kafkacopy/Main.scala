@@ -16,7 +16,7 @@ object Main {
 
   def run(args: Array[String], stdin: Reader, stdout: PrintWriter): Unit = {
     val conf = Cli.cli(args)
-    new Demo(conf.get, stdin, stdout).execute()
+    new KafkaCopy(conf.get, stdin, stdout).execute()
   }
 
 }

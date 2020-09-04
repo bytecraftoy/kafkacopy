@@ -57,9 +57,12 @@ class KafkaReader(private val consumer: Consumer[Array[Byte], Array[Byte]], priv
 
   def readAll(topicPartitions: List[TopicPartitionDto]): Vector[RecordDto] = {
     var replies: Vector[RecordDto] = Vector.empty[RecordDto]
-    read(topicPartitions, { recs =>
-      replies ++= recs
-    })
+    read(
+      topicPartitions,
+      { recs =>
+        replies ++= recs
+      }
+    )
     replies
   }
 
@@ -124,13 +127,14 @@ class KafkaReader(private val consumer: Consumer[Array[Byte], Array[Byte]], priv
       }
     }
 
-    def resolvePosition(topicPartition: TopicPartition, position: Position): Option[Long] = position match {
-      case Beginning      => Some(beginningOffsets(topicPartition))
-      case End            => Some(endOffsets(topicPartition))
-      case First          => fistOffset(topicPartition)
-      case Last           => lastOffset(topicPartition)
-      case Offset(offset) => Some(offset)
-    }
+    def resolvePosition(topicPartition: TopicPartition, position: Position): Option[Long] =
+      position match {
+        case Beginning      => Some(beginningOffsets(topicPartition))
+        case End            => Some(endOffsets(topicPartition))
+        case First          => fistOffset(topicPartition)
+        case Last           => lastOffset(topicPartition)
+        case Offset(offset) => Some(offset)
+      }
 
     val fromOffsets: Map[TopicPartition, Option[Long]] = partMap.map {
       case (tp, part) =>
@@ -142,14 +146,17 @@ class KafkaReader(private val consumer: Consumer[Array[Byte], Array[Byte]], priv
         (tp, resolvePosition(tp, part.to))
     }
 
+    log.debug(s"assign $topicPartitions")
     consumer.assign(topicPartitions)
 
     val starts: Map[TopicPartition, Long] = fromOffsets.collect { case (k, Some(v)) => (k, v) }
-    val ends: Map[TopicPartition, Long] = toOffsets.collect { case (k, Some(v))     => (k, v) }
+    val ends: Map[TopicPartition, Long] = toOffsets.collect { case (k, Some(v)) => (k, v) }
     var pendingPartitions: Set[TopicPartition] = starts.keySet.union(ends.keySet)
+    log.debug(s"starts=$starts")
+    log.debug(s"ends=$ends")
     @tailrec
     def fetch(): Unit = {
-      log.debug("polling")
+      log.debug("poll")
       val results = consumer.poll(timeout)
       val pendingPartitionsPrime = pendingPartitions
       val filtered = results.asScala.toVector.filter { rec =>
@@ -164,7 +171,9 @@ class KafkaReader(private val consumer: Consumer[Array[Byte], Array[Byte]], priv
         batch(filtered.map(Record.consumerRecordToDto))
       if (pendingPartitions.nonEmpty) {
         if (pendingPartitionsPrime != pendingPartitions) {
-          consumer.assign(partMap.keySet.intersect(pendingPartitions).toList.asJava)
+          val remainingPartitions = partMap.keySet.intersect(pendingPartitions).toList.asJava
+          log.debug(s"assign $remainingPartitions")
+          consumer.assign(remainingPartitions)
         }
         fetch()
       }
@@ -177,6 +186,5 @@ class KafkaReader(private val consumer: Consumer[Array[Byte], Array[Byte]], priv
     fetch()
     consumer.assign(Collections.emptyList())
     log.debug("done")
-    batch(Vector.empty)
   }
 }

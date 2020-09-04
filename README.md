@@ -26,7 +26,7 @@ mill mill.scalalib.GenIdea/idea
 ```
 Start local Kafka broker (for manual testing)
 ```
-mill kafkacopy.test.runMain kafkacopy.LocalKafka
+mill kafkacopy.test.runMain kafka.LocalKafka
 ```
 To check [REUSE](https://reuse.software/) compliance
 ```
@@ -42,7 +42,7 @@ See [kafkacopy/test/resources/sample1.jsonl](./kafkacopy/test/resources/sample1.
 
 Yoy can start local kafka broker like this, if needed:
 ```
-$ mill kafkacopy.test.runMain kafkacopy.LocalKafka
+$ mill kafkacopy.test.runMain kafka.LocalKafka
 ...
 Local kafka running at: 127.0.0.1:35489
 ctrl-c to terminate

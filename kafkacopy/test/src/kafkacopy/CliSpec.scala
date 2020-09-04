@@ -81,7 +81,8 @@ class CliSpec extends AnyFunSpec with Matchers {
     }
     it("should parse copy with configs") {
       val conf = Cli.cli(
-        Array("copy", "-s", "a=b", "broker1/topic1", "-d", "c=d", "-f", "value", "broker2/topic2/42", "-t", "1"))
+        Array("copy", "-s", "a=b", "broker1/topic1", "-d", "c=d", "-f", "value", "broker2/topic2/42", "-t", "1")
+      )
       conf.flatMap(_.timeoutInSec) should be(Some(1))
       conf.flatMap(_.cmd) should be(Some(Copy))
       conf.flatMap(_.srcAddress) should be(Some(Broker("broker1", "topic1")))
@@ -90,5 +91,35 @@ class CliSpec extends AnyFunSpec with Matchers {
       conf.flatMap(_.dstBrokerProperties) should be(Some(Map("c" -> "d")))
       conf.map(_.dstFields) should be(Some(Set(Value)))
     }
+    it("should parse copy range, exact") {
+      val actual = Cli.cli(Array("copy", "b/t/1/2", "@-")).flatMap(_.srcAddress)
+      val expected = Some(Broker("b", "t", Some(1), Some(Single(Exact(2)))))
+      actual shouldBe expected
+    }
+    it("should parse copy range, start point") {
+      val actual = Cli.cli(Array("copy", "b/t/1/2-", "@-")).flatMap(_.srcAddress)
+      val expected = Some(Broker("b", "t", Some(1), Some(Starting(Exact(2)))))
+      actual shouldBe expected
+    }
+    it("should parse copy range, from-to") {
+      val actual = Cli.cli(Array("copy", "b/t/1/2-3", "@-")).flatMap(_.srcAddress)
+      val expected = Some(Broker("b", "t", Some(1), Some(FromTo(Exact(2), Exact(3)))))
+      actual shouldBe expected
+    }
+    it("should parse copy range, first-last") {
+      val actual = Cli.cli(Array("copy", "b/t/1/first-last", "@-")).flatMap(_.srcAddress)
+      val expected = Some(Broker("b", "t", Some(1), Some(FromTo(Cli.First, Cli.Last))))
+      actual shouldBe expected
+    }
+    it("should parse copy range, beginning-end") {
+      val actual = Cli.cli(Array("copy", "b/t/1/beginning-end", "@-")).flatMap(_.srcAddress)
+      val expected = Some(Broker("b", "t", Some(1), Some(FromTo(Cli.Beginning, Cli.End))))
+      actual shouldBe expected
+    }
+    it("should parse encoding") {
+      val conf = Cli.cli(Array("copy", "b1/t1", "b2/t2/1", "-e", "json"))
+      conf.get.encoding shouldBe BinaryEncoding.Json
+    }
+
   }
 }

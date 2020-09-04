@@ -16,12 +16,12 @@ class JsonReadWriteSpec extends AnyFunSpec with Matchers {
     val mapper = new RecordJsonMapper()
     it("stream batching") {
       val out = new ByteArrayOutputStream()
-      val write: Vector[RecordDto] => Unit = mapper.writerFor(BinaryFormat.Text, out)
+      val write: Vector[RecordDto] => Unit = mapper.writerFor(BinaryEncoding.Text, out)
       write(Vector("a", "b", "c").map(RecordDto(_)))
       write(Vector("1", "2", "3").map(RecordDto(_)))
       write(Vector("x", "y", "z").map(RecordDto(_)))
       val read: (Vector[RecordDto] => Unit) => Unit =
-        mapper.readerFor(BinaryFormat.Text, 2, new ByteArrayInputStream(out.toByteArray))
+        mapper.readerFor(BinaryEncoding.Text, 2, new ByteArrayInputStream(out.toByteArray))
       var actual = Vector.empty[Vector[String]]
       read { actual :+= _.map(_.topic) }
       val expected = Vector(Vector("a", "b"), Vector("c", "1"), Vector("2", "3"), Vector("x", "y"), Vector("z"))
@@ -29,36 +29,36 @@ class JsonReadWriteSpec extends AnyFunSpec with Matchers {
     }
     it("text encoding") {
       val out = new ByteArrayOutputStream()
-      val write: Vector[RecordDto] => Unit = mapper.writerFor(BinaryFormat.Text, out)
+      val write: Vector[RecordDto] => Unit = mapper.writerFor(BinaryEncoding.Text, out)
       val expected =
         """{"topic":"a","headers":[{"key":"b","value":"h"}],"key":"k","value":"v"}
           |""".stripMargin
       val read: (Vector[RecordDto] => Unit) => Unit =
-        mapper.readerFor(BinaryFormat.Text, 2, new ByteArrayInputStream(expected.getBytes(UTF_8)))
+        mapper.readerFor(BinaryEncoding.Text, 2, new ByteArrayInputStream(expected.getBytes(UTF_8)))
       read(write)
       val actual = new java.lang.String(out.toByteArray)
       actual should be(expected)
     }
     it("json encoding") {
       val out = new ByteArrayOutputStream()
-      val write: Vector[RecordDto] => Unit = mapper.writerFor(BinaryFormat.Json, out)
+      val write: Vector[RecordDto] => Unit = mapper.writerFor(BinaryEncoding.Json, out)
       val expected =
         """{"topic":"a","headers":[{"key":"b","value":{"h":1}}],"key":{"k":1},"value":[{"v":1}]}
           |""".stripMargin
       val read: (Vector[RecordDto] => Unit) => Unit =
-        mapper.readerFor(BinaryFormat.Json, 2, new ByteArrayInputStream(expected.getBytes(UTF_8)))
+        mapper.readerFor(BinaryEncoding.Json, 2, new ByteArrayInputStream(expected.getBytes(UTF_8)))
       read(write)
       val actual = new java.lang.String(out.toByteArray)
       actual should be(expected)
     }
     it("base64 encoding") {
       val out = new ByteArrayOutputStream()
-      val write: Vector[RecordDto] => Unit = mapper.writerFor(BinaryFormat.Base64, out)
+      val write: Vector[RecordDto] => Unit = mapper.writerFor(BinaryEncoding.Base64, out)
       val expected =
         """{"topic":"a","headers":[{"key":"b","value":"aA=="}],"key":"aw==","value":"dg=="}
           |""".stripMargin
       val read: (Vector[RecordDto] => Unit) => Unit =
-        mapper.readerFor(BinaryFormat.Base64, 2, new ByteArrayInputStream(expected.getBytes(UTF_8)))
+        mapper.readerFor(BinaryEncoding.Base64, 2, new ByteArrayInputStream(expected.getBytes(UTF_8)))
       read(write)
       val actual = new java.lang.String(out.toByteArray)
       actual should be(expected)
